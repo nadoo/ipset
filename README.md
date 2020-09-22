@@ -25,9 +25,10 @@ func main() {
 	}
 
 	ipset.Add("myset", "1.1.1.1")
-	ipset.Add("myset", "192.168.1.0/24")
+	ipset.Flush("myset")
 
-	// ipset.Flush("myset")
+	ipset.Add("myset", "2.2.2.2")
+	ipset.Add("myset", "192.168.1.0/24")
 }
 ```
 
@@ -44,7 +45,7 @@ References: 0
 Number of entries: 2
 Members:
 192.168.1.0/24
-1.1.1.1
+2.2.2.2
 ```
 
 ## Links

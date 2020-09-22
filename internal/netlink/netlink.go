@@ -1,7 +1,6 @@
 package netlink
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"net"
@@ -79,6 +78,7 @@ func New() (*NetLink, error) {
 
 	err = syscall.Bind(fd, &nl.lsa)
 	if err != nil {
+		syscall.Close(fd)
 		return nil, err
 	}
 
@@ -385,19 +385,4 @@ func ZeroTerminated(s string) []byte {
 	}
 	bytes[len(s)] = 0
 	return bytes
-}
-
-// NonZeroTerminated .
-func NonZeroTerminated(s string) []byte {
-	bytes := make([]byte, len(s))
-	for i := 0; i < len(s); i++ {
-		bytes[i] = s[i]
-	}
-	return bytes
-}
-
-// BytesToString .
-func BytesToString(b []byte) string {
-	n := bytes.Index(b, []byte{0})
-	return string(b[:n])
 }
