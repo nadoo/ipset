@@ -19,19 +19,21 @@ import (
 )
 
 func main() {
-	nl, err := ipset.NewNetLink()
+	err := ipset.Init()
 	if err != nil {
 		log.Printf("error in create netlink: %s", err)
 		return
 	}
 
-	if err = nl.CreateSet("myset"); err != nil {
+	if err = ipset.Create("myset"); err != nil {
 		log.Printf("error in create set: %s", err)
 		return
 	}
 
-	nl.AddToSet("myset", "1.1.1.1")
-	nl.AddToSet("myset", "192.168.1.0/24")
+	ipset.Add("myset", "1.1.1.1")
+	ipset.Add("myset", "192.168.1.0/24")
+
+	// ipset.Flush("myset")
 }
 ```
 
