@@ -19,13 +19,7 @@ import (
 )
 
 func main() {
-	err := ipset.Init()
-	if err != nil {
-		log.Printf("error in create netlink: %s", err)
-		return
-	}
-
-	if err = ipset.Create("myset"); err != nil {
+	if err := ipset.Create("myset"); err != nil {
 		log.Printf("error in create set: %s", err)
 		return
 	}

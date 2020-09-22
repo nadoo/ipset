@@ -6,23 +6,32 @@ import (
 
 var nl *netlink.NetLink
 
-// Init initializes a netlink socket.
-func Init() (err error) {
-	nl, err = netlink.New()
-	return err
-}
-
 // Create creates a new set.
-func Create(setName string) error {
+func Create(setName string) (err error) {
+	if nl == nil {
+		if nl, err = netlink.New(); err != nil {
+			return
+		}
+	}
 	return nl.CreateSet(setName)
 }
 
 // Flush flushes a named set.
-func Flush(setName string) error {
+func Flush(setName string) (err error) {
+	if nl == nil {
+		if nl, err = netlink.New(); err != nil {
+			return
+		}
+	}
 	return nl.FlushSet(setName)
 }
 
 // Add adds entry to the named set.
-func Add(setName, entry string) error {
+func Add(setName, entry string) (err error) {
+	if nl == nil {
+		if nl, err = netlink.New(); err != nil {
+			return
+		}
+	}
 	return nl.AddToSet(setName, entry)
 }

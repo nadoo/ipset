@@ -74,16 +74,15 @@ func New() (*NetLink, error) {
 	}
 	// defer syscall.Close(fd)
 
-	lsa := syscall.SockaddrNetlink{
-		Family: syscall.AF_NETLINK,
-	}
+	nl := &NetLink{fd: fd}
+	nl.lsa.Family = syscall.AF_NETLINK
 
-	err = syscall.Bind(fd, &lsa)
+	err = syscall.Bind(fd, &nl.lsa)
 	if err != nil {
 		return nil, err
 	}
 
-	return &NetLink{fd: fd, lsa: lsa}, nil
+	return nl, nil
 }
 
 // CreateSet create a ipset.
