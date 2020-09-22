@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"net"
 	"sync/atomic"
 	"syscall"
@@ -113,7 +112,7 @@ func (nl *NetLink) CreateSet(setName string) error {
 // FlushSet flush a ipset.
 func (nl *NetLink) FlushSet(setName string) error {
 	if setName == "" {
-		return errors.New("ipset: setName must be specified")
+		return errors.New("setName must be specified")
 	}
 
 	// TODO: support AF_INET6
@@ -128,11 +127,11 @@ func (nl *NetLink) FlushSet(setName string) error {
 // AddToSet adds an entry to ipset.
 func (nl *NetLink) AddToSet(setName, entry string) error {
 	if setName == "" {
-		return errors.New("ipset: setName must be specified")
+		return errors.New("setName must be specified")
 	}
 
 	if len(setName) > IPSET_MAXNAMELEN {
-		return errors.New("ipset: name too long")
+		return errors.New("setName too long")
 	}
 
 	var ip net.IP
@@ -144,7 +143,7 @@ func (nl *NetLink) AddToSet(setName, entry string) error {
 	}
 
 	if ip == nil {
-		return fmt.Errorf("ipset: parse %s error", entry)
+		return errors.New("error in entry parsing")
 	}
 
 	// TODO: support AF_INET6
