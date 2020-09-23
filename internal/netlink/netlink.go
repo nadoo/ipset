@@ -125,6 +125,14 @@ func (nl *NetLink) FlushSet(setName string) error {
 
 // AddToSet adds an entry to ipset.
 func (nl *NetLink) AddToSet(setName, entry string) error {
+	return nl.handleEntry(IPSET_CMD_ADD, setName, entry)
+}
+
+func (nl *NetLink) DelFromSet(setName, entry string) error {
+	return nl.handleEntry(IPSET_CMD_DEL, setName, entry)
+}
+
+func (nl *NetLink) handleEntry(cmd int, setName, entry string) error {
 	if setName == "" {
 		return errors.New("setName must be specified")
 	}
@@ -146,7 +154,7 @@ func (nl *NetLink) AddToSet(setName, entry string) error {
 	}
 
 	// TODO: support AF_INET6
-	req := NewNetlinkRequest(IPSET_CMD_ADD|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
+	req := NewNetlinkRequest(cmd|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
 	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
 	req.AddData(NewRtAttr(IPSET_ATTR_SETNAME, ZeroTerminated(setName)))

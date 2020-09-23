@@ -4,7 +4,7 @@
 [![GitHub tag](https://img.shields.io/github/v/tag/nadoo/ipset.svg?sort=semver&style=flat-square)](https://github.com/nadoo/ipset/releases)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/nadoo/ipset)](https://pkg.go.dev/github.com/nadoo/ipset)
 
-ipset package for go via netlink socket.
+ipset package for Go via netlink socket.
 
 ## Usage
 
@@ -27,8 +27,10 @@ func main() {
 	ipset.Add("myset", "1.1.1.1")
 	ipset.Flush("myset")
 
-	ipset.Add("myset", "2.2.2.2")
 	ipset.Add("myset", "192.168.1.0/24")
+	ipset.Del("myset", "192.168.1.0/24")
+
+	ipset.Add("myset", "2.2.2.2")
 }
 ```
 
@@ -44,7 +46,6 @@ Size in memory: 472
 References: 0
 Number of entries: 2
 Members:
-192.168.1.0/24
 2.2.2.2
 ```
 

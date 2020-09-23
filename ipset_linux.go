@@ -26,7 +26,8 @@ func Flush(setName string) (err error) {
 	return nl.FlushSet(setName)
 }
 
-// Add adds entry to the named set.
+// Add adds an entry to the named set.
+// entry could be: "1.1.1.1" or "192.168.1.0/24".
 func Add(setName, entry string) (err error) {
 	if nl == nil {
 		if nl, err = netlink.New(); err != nil {
@@ -34,4 +35,14 @@ func Add(setName, entry string) (err error) {
 		}
 	}
 	return nl.AddToSet(setName, entry)
+}
+
+// Del deletes an entry from the named set.
+func Del(setName, entry string) (err error) {
+	if nl == nil {
+		if nl, err = netlink.New(); err != nil {
+			return
+		}
+	}
+	return nl.DelFromSet(setName, entry)
 }
