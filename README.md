@@ -19,7 +19,8 @@ import (
 )
 
 func main() {
-	if err := ipset.Create("myset"); err != nil {
+	err := ipset.Create("myset")
+	if err != nil {
 		log.Printf("error in create set: %s", err)
 		return
 	}
@@ -42,9 +43,9 @@ Name: myset
 Type: hash:net
 Revision: 1
 Header: family inet hashsize 1024 maxelem 65536
-Size in memory: 472
+Size in memory: 408
 References: 0
-Number of entries: 2
+Number of entries: 1
 Members:
 2.2.2.2
 ```
@@ -52,3 +53,4 @@ Members:
 ## Links
 
 - [glider](https://github.com/nadoo/glider): a forward proxy with ipset management features.
+- [dnsmasq](https://github.com/imp/dnsmasq/blob/master/src/ipset.c): ipset implementation reference from dnsmasq.
