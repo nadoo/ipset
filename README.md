@@ -19,11 +19,13 @@ import (
 )
 
 func main() {
-	err := ipset.Create("myset")
+	err := ipset.Init()
 	if err != nil {
-		log.Printf("error in create set: %s", err)
+		log.Printf("error in ipset Init: %s", err)
 		return
 	}
+
+	ipset.Create("myset")
 
 	ipset.Add("myset", "1.1.1.1")
 	ipset.Flush("myset")
@@ -52,5 +54,5 @@ Members:
 
 ## Links
 
-- [glider](https://github.com/nadoo/glider): a forward proxy with ipset management features.
+- [glider](https://github.com/nadoo/glider): a forward proxy with ipset management features powered by this package.
 - [dnsmasq](https://github.com/imp/dnsmasq/blob/master/src/ipset.c): ipset implementation reference from dnsmasq.
