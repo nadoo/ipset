@@ -19,8 +19,8 @@ import (
 )
 
 func main() {
-	err := ipset.Init()
-	if err != nil {
+	// must call Init first
+	if err := ipset.Init(); err != nil {
 		log.Printf("error in ipset Init: %s", err)
 		return
 	}
@@ -55,4 +55,3 @@ Members:
 ## Links
 
 - [glider](https://github.com/nadoo/glider): a forward proxy with ipset management features powered by this package.
-- [dnsmasq](https://github.com/imp/dnsmasq/blob/master/src/ipset.c): ipset implementation reference from dnsmasq.
