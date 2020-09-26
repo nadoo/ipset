@@ -22,10 +22,11 @@ const IPSET_MAXNAMELEN = 32
 
 // Message types and commands.
 const (
-	IPSET_CMD_CREATE = 2
-	IPSET_CMD_FLUSH  = 4
-	IPSET_CMD_ADD    = 9
-	IPSET_CMD_DEL    = 10
+	IPSET_CMD_CREATE  = 2
+	IPSET_CMD_DESTROY = 3
+	IPSET_CMD_FLUSH   = 4
+	IPSET_CMD_ADD     = 9
+	IPSET_CMD_DEL     = 10
 )
 
 // Attributes at command level.
@@ -104,6 +105,21 @@ func (nl *NetLink) CreateSet(setName string) error {
 	req.AddData(NewRtAttr(IPSET_ATTR_REVISION, Uint8Attr(1)))
 	req.AddData(NewRtAttr(IPSET_ATTR_FAMILY, Uint8Attr(2)))
 	req.AddData(NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil))
+
+	return syscall.Sendto(nl.fd, req.Serialize(), 0, &nl.lsa)
+}
+
+// DestroySet destroys a ipset.
+func (nl *NetLink) DestroySet(setName string) error {
+	if setName == "" {
+		return errors.New("setName must be specified")
+	}
+
+	// TODO: support AF_INET6
+	req := NewNetlinkRequest(IPSET_CMD_DESTROY|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
+	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
+	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
+	req.AddData(NewRtAttr(IPSET_ATTR_SETNAME, ZeroTerminated(setName)))
 
 	return syscall.Sendto(nl.fd, req.Serialize(), 0, &nl.lsa)
 }

@@ -17,6 +17,11 @@ func Create(setName string) (err error) {
 	return nl.CreateSet(setName)
 }
 
+// Destroy destroys a named set.
+func Destroy(setName string) (err error) {
+	return nl.DestroySet(setName)
+}
+
 // Flush flushes a named set.
 func Flush(setName string) (err error) {
 	return nl.FlushSet(setName)

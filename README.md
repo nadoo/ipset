@@ -4,7 +4,7 @@
 [![GitHub tag](https://img.shields.io/github/v/tag/nadoo/ipset.svg?sort=semver&style=flat-square)](https://github.com/nadoo/ipset/releases)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/nadoo/ipset)](https://pkg.go.dev/github.com/nadoo/ipset)
 
-ipset package for Go via netlink socket.
+netlink ipset package for Go.
 
 ## Usage
 
