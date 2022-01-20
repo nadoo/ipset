@@ -25,8 +25,8 @@ func Flush(setName string) (err error) {
 
 // Add adds an entry to the named set.
 // entry could be: "1.1.1.1" or "192.168.1.0/24".
-func Add(setName, entry string) (err error) {
-	return nl.AddToSet(setName, entry)
+func Add(setName, entry string, opts ...Option) (err error) {
+	return nl.AddToSet(setName, entry, opts...)
 }
 
 // Del deletes an entry from the named set.

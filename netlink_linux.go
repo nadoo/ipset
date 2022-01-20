@@ -41,8 +41,9 @@ const (
 
 // CADT specific attributes.
 const (
-	IPSET_ATTR_IP   = 1
-	IPSET_ATTR_CIDR = 3
+	IPSET_ATTR_IP      = 1
+	IPSET_ATTR_CIDR    = 3
+	IPSET_ATTR_TIMEOUT = 6
 )
 
 // IP specific attributes.
@@ -68,12 +69,13 @@ type NetLink struct {
 
 type option struct {
 	ipv6    bool
-	timeout *uint32
+	timeout uint32
 }
 
 type Option func(opts *option)
 
-func OptIPv6() Option { return func(opts *option) { opts.ipv6 = true } }
+func OptIPv6() Option                  { return func(opts *option) { opts.ipv6 = true } }
+func OptTimeout(timeout uint32) Option { return func(opts *option) { opts.timeout = timeout } }
 
 // New returns a new netlink socket.
 func New() (*NetLink, error) {
@@ -122,7 +124,12 @@ func (nl *NetLink) CreateSet(setName string, opts ...Option) error {
 	req.AddData(NewRtAttr(IPSET_ATTR_TYPENAME, ZeroTerminated("hash:net")))
 	req.AddData(NewRtAttr(IPSET_ATTR_REVISION, Uint8Attr(1)))
 	req.AddData(NewRtAttr(IPSET_ATTR_FAMILY, Uint8Attr(family)))
-	req.AddData(NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil))
+
+	attrData := NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil)
+	if option.timeout != 0 {
+		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.timeout})
+	}
+	req.AddData(attrData)
 
 	return syscall.Sendto(nl.fd, req.Serialize(), 0, &nl.lsa)
 }
@@ -156,15 +163,15 @@ func (nl *NetLink) FlushSet(setName string) error {
 }
 
 // AddToSet adds an entry to ipset.
-func (nl *NetLink) AddToSet(setName, entry string) error {
-	return nl.handleEntry(IPSET_CMD_ADD, setName, entry)
+func (nl *NetLink) AddToSet(setName, entry string, opts ...Option) error {
+	return nl.handleEntry(IPSET_CMD_ADD, setName, entry, opts...)
 }
 
 func (nl *NetLink) DelFromSet(setName, entry string) error {
 	return nl.handleEntry(IPSET_CMD_DEL, setName, entry)
 }
 
-func (nl *NetLink) handleEntry(cmd int, setName, entry string) error {
+func (nl *NetLink) handleEntry(cmd int, setName, entry string, opts ...Option) error {
 	if setName == "" {
 		return errors.New("setName must be specified")
 	}
@@ -190,8 +197,18 @@ func (nl *NetLink) handleEntry(cmd int, setName, entry string) error {
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
 	req.AddData(NewRtAttr(IPSET_ATTR_SETNAME, ZeroTerminated(setName)))
 
-	attrNested := NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil)
-	attrIP := NewRtAttrChild(attrNested, IPSET_ATTR_IP|NLA_F_NESTED, nil)
+	attrData := NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil)
+
+	option := option{}
+	for _, opt := range opts {
+		opt(&option)
+	}
+
+	if option.timeout != 0 {
+		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.timeout})
+	}
+
+	attrIP := NewRtAttrChild(attrData, IPSET_ATTR_IP|NLA_F_NESTED, nil)
 
 	if ipb := ip.To4(); ipb != nil {
 		NewRtAttrChild(attrIP, IPSET_ATTR_IPADDR_IPV4|NLA_F_NET_BYTEORDER, ipb)
@@ -202,11 +219,11 @@ func (nl *NetLink) handleEntry(cmd int, setName, entry string) error {
 	// for cidr prefix
 	if cidr != nil {
 		cidrPrefix, _ := cidr.Mask.Size()
-		NewRtAttrChild(attrNested, IPSET_ATTR_CIDR, Uint8Attr(uint8(cidrPrefix)))
+		NewRtAttrChild(attrData, IPSET_ATTR_CIDR, Uint8Attr(uint8(cidrPrefix)))
 	}
 
-	NewRtAttrChild(attrNested, 9|NLA_F_NET_BYTEORDER, Uint32Attr(0))
-	req.AddData(attrNested)
+	NewRtAttrChild(attrData, 9|NLA_F_NET_BYTEORDER, Uint32Attr(0))
+	req.AddData(attrData)
 
 	return syscall.Sendto(nl.fd, req.Serialize(), 0, &nl.lsa)
 }
@@ -290,6 +307,11 @@ func NewRtAttrChild(parent *RtAttr, attrType int, data []byte) *RtAttr {
 	attr := NewRtAttr(attrType, data)
 	parent.children = append(parent.children, attr)
 	return attr
+}
+
+// AddChild adds an existing NetlinkRequestData as a child.
+func (a *RtAttr) AddChild(attr NetlinkRequestData) {
+	a.children = append(a.children, attr)
 }
 
 // Len returns the length of RtAttr.
@@ -417,6 +439,37 @@ func Uint32Attr(v uint32) []byte {
 	bytes := make([]byte, 4)
 	native.PutUint32(bytes, v)
 	return bytes
+}
+
+// Uint32Attr .
+func Uint32Attr2(v uint32) []byte {
+	native := NativeEndian()
+	bytes := make([]byte, 4)
+	native.PutUint32(bytes, v)
+	return bytes
+}
+
+type Uint32Attribute struct {
+	Type  uint16
+	Value uint32
+}
+
+func (a *Uint32Attribute) Serialize() []byte {
+	native := NativeEndian()
+	buf := make([]byte, rtaAlignOf(8))
+	native.PutUint16(buf[0:2], 8)
+	native.PutUint16(buf[2:4], a.Type)
+
+	if a.Type&NLA_F_NET_BYTEORDER != 0 {
+		binary.BigEndian.PutUint32(buf[4:], a.Value)
+	} else {
+		native.PutUint32(buf[4:], a.Value)
+	}
+	return buf
+}
+
+func (a *Uint32Attribute) Len() int {
+	return 8
 }
 
 // ZeroTerminated .

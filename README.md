@@ -10,14 +10,6 @@ netlink ipset package for Go.
 
 ### Your code:
 ```Go
-package main
-
-import (
-	"log"
-
-	"github.com/nadoo/ipset"
-)
-
 func main() {
 	// must call Init first
 	if err := ipset.Init(); err != nil {
@@ -25,6 +17,8 @@ func main() {
 		return
 	}
 
+	// default is ipv4
+	ipset.Destroy("myset")
 	ipset.Create("myset")
 
 	ipset.Add("myset", "1.1.1.1")
@@ -34,6 +28,22 @@ func main() {
 	ipset.Del("myset", "192.168.1.0/24")
 
 	ipset.Add("myset", "2.2.2.2")
+
+	// ipset family inet6
+	ipset.Destroy("myset6timeout")
+	ipset.Create("myset6timeout", ipset.OptIPv6())
+	ipset.Flush("myset6timeout")
+
+	ipset.Add("myset6timeout", "2404:6800:4005:812::200e")
+	ipset.Add("myset6timeout", "2404:6800:4005:812::/64")
+
+	// ipset family inet6 with timeout
+	ipset.Destroy("myset6")
+	ipset.Create("myset6", ipset.OptIPv6(), ipset.OptTimeout(60))
+	ipset.Flush("myset6")
+
+	ipset.Add("myset6", "2404:6800:4005:812::200e", ipset.OptTimeout(10))
+	ipset.Add("myset6", "2404:6800:4005:812::/64")
 }
 ```
 
