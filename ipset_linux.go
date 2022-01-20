@@ -1,10 +1,17 @@
 package ipset
 
-var nl *NetLink
+import "github.com/nadoo/ipset/internal/netlink"
+
+var nl *netlink.NetLink
+
+type Option = netlink.Option
+
+func OptIPv6() Option                  { return func(opts *netlink.Options) { opts.IPv6 = true } }
+func OptTimeout(timeout uint32) Option { return func(opts *netlink.Options) { opts.Timeout = timeout } }
 
 // Init prepares a netlink socket of ipset.
 func Init() (err error) {
-	nl, err = New()
+	nl, err = netlink.New()
 	return err
 }
 

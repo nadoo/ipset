@@ -39,19 +39,11 @@ func main() {
 
 	// ipset family inet6
 	ipset.Destroy("myset6")
-	ipset.Create("myset6", ipset.OptIPv6())
+	ipset.Create("myset6", ipset.OptIPv6(), ipset.OptTimeout(60))
 	ipset.Flush("myset6")
 
-	ipset.Add("myset6", "2404:6800:4005:812::200e")
+	ipset.Add("myset6", "2404:6800:4005:812::200e", ipset.OptTimeout(10))
 	ipset.Add("myset6", "2404:6800:4005:812::/64")
-
-	// ipset family inet6 with timeout
-	ipset.Destroy("myset6timeout")
-	ipset.Create("myset6timeout", ipset.OptIPv6(), ipset.OptTimeout(60))
-	ipset.Flush("myset6timeout")
-
-	ipset.Add("myset6timeout", "2404:6800:4005:812::200e", ipset.OptTimeout(10))
-	ipset.Add("myset6timeout", "2404:6800:4005:812::/64")
 }
 ```
 
@@ -68,6 +60,21 @@ References: 0
 Number of entries: 1
 Members:
 2.2.2.2
+```
+
+`ipset list myset6`
+
+```
+Name: myset6
+Type: hash:net
+Revision: 1
+Header: family inet6 hashsize 1024 maxelem 65536 timeout 60
+Size in memory: 1432
+References: 0
+Number of entries: 2
+Members:
+2404:6800:4005:812::/64 timeout 55
+2404:6800:4005:812::200e timeout 5
 ```
 
 ## Links

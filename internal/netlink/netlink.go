@@ -1,4 +1,4 @@
-package ipset
+package netlink
 
 import (
 	"encoding/binary"
@@ -67,15 +67,12 @@ type NetLink struct {
 	lsa syscall.SockaddrNetlink
 }
 
-type option struct {
-	ipv6    bool
-	timeout uint32
+type Options struct {
+	IPv6    bool
+	Timeout uint32
 }
 
-type Option func(opts *option)
-
-func OptIPv6() Option                  { return func(opts *option) { opts.ipv6 = true } }
-func OptTimeout(timeout uint32) Option { return func(opts *option) { opts.timeout = timeout } }
+type Option func(opts *Options)
 
 // New returns a new netlink socket.
 func New() (*NetLink, error) {
@@ -107,13 +104,13 @@ func (nl *NetLink) CreateSet(setName string, opts ...Option) error {
 		return errors.New("ipset: name too long")
 	}
 
-	option := option{}
+	option := Options{}
 	for _, opt := range opts {
 		opt(&option)
 	}
 
 	var family uint8 = syscall.AF_INET
-	if option.ipv6 {
+	if option.IPv6 {
 		family = syscall.AF_INET6
 	}
 
@@ -126,8 +123,8 @@ func (nl *NetLink) CreateSet(setName string, opts ...Option) error {
 	req.AddData(NewRtAttr(IPSET_ATTR_FAMILY, Uint8Attr(family)))
 
 	attrData := NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil)
-	if option.timeout != 0 {
-		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.timeout})
+	if option.Timeout != 0 {
+		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.Timeout})
 	}
 	req.AddData(attrData)
 
@@ -199,13 +196,13 @@ func (nl *NetLink) handleEntry(cmd int, setName, entry string, opts ...Option) e
 
 	attrData := NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil)
 
-	option := option{}
+	option := Options{}
 	for _, opt := range opts {
 		opt(&option)
 	}
 
-	if option.timeout != 0 {
-		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.timeout})
+	if option.Timeout != 0 {
+		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.Timeout})
 	}
 
 	attrIP := NewRtAttrChild(attrData, IPSET_ATTR_IP|NLA_F_NESTED, nil)
