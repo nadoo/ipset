@@ -1,6 +1,5 @@
 # ipset
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/nadoo/ipset?style=flat-square)](https://goreportcard.com/report/github.com/nadoo/ipset)
 [![GitHub tag](https://img.shields.io/github/v/tag/nadoo/ipset.svg?sort=semver&style=flat-square)](https://github.com/nadoo/ipset/releases)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/nadoo/ipset)](https://pkg.go.dev/github.com/nadoo/ipset)
 
@@ -25,15 +24,17 @@ func main() {
 		return
 	}
 
-	ipset.Destroy("myset") // ipset destroy myset
-	ipset.Create("myset") // ipset create myset hash:net
-	ipset.Add("myset", "1.1.1.1") // ipset add myset 1.1.1.1
-	ipset.Add("myset", "2.2.2.0/24") // ipset add myset 2.2.2.0/24
+	// default is ipv4 without timeout
+	ipset.Destroy("myset")
+	ipset.Create("myset")
+	ipset.Add("myset", "1.1.1.1")
+	ipset.Add("myset", "2.2.2.0/24")
 
+	// ipv6 and timeout example
 	ipset.Destroy("myset6")
 	// ipset create myset6 hash:net family inet6 timeout 60
 	ipset.Create("myset6", ipset.OptIPv6(), ipset.OptTimeout(60))
-	ipset.Flush("myset6") // ipset flush myset6
+	ipset.Flush("myset6")
 
 	ipset.Add("myset6", "2404:6800:4005:812::200e", ipset.OptTimeout(10))
 	ipset.Add("myset6", "2404:6800:4005:812::/64")
@@ -52,8 +53,8 @@ Size in memory: 552
 References: 0
 Number of entries: 2
 Members:
-2.2.2.0/24
 1.1.1.1
+2.2.2.0/24
 ```
 
 `ipset list myset6`

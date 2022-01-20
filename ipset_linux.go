@@ -4,9 +4,13 @@ import "github.com/nadoo/ipset/internal/netlink"
 
 var nl *netlink.NetLink
 
+// Option is used to set parameters of ipset operations.
 type Option = netlink.Option
 
-func OptIPv6() Option                  { return func(opts *netlink.Options) { opts.IPv6 = true } }
+// OptIPv6 sets `family inet6` parameter to operations.
+func OptIPv6() Option { return func(opts *netlink.Options) { opts.IPv6 = true } }
+
+// OptTimeout sets `timeout xx` parameter to operations.
 func OptTimeout(timeout uint32) Option { return func(opts *netlink.Options) { opts.Timeout = timeout } }
 
 // Init prepares a netlink socket of ipset.
