@@ -1,4 +1,4 @@
-package netlink
+package ipset
 
 import (
 	"encoding/binary"
@@ -66,6 +66,15 @@ type NetLink struct {
 	lsa syscall.SockaddrNetlink
 }
 
+type option struct {
+	ipv6    bool
+	timeout *uint32
+}
+
+type Option func(opts *option)
+
+func OptIPv6() Option { return func(opts *option) { opts.ipv6 = true } }
+
 // New returns a new netlink socket.
 func New() (*NetLink, error) {
 	fd, err := syscall.Socket(syscall.AF_NETLINK, syscall.SOCK_RAW, syscall.NETLINK_NETFILTER)
@@ -87,7 +96,7 @@ func New() (*NetLink, error) {
 }
 
 // CreateSet create a ipset.
-func (nl *NetLink) CreateSet(setName string) error {
+func (nl *NetLink) CreateSet(setName string, opts ...Option) error {
 	if setName == "" {
 		return errors.New("ipset: setName must be specified")
 	}
@@ -96,14 +105,23 @@ func (nl *NetLink) CreateSet(setName string) error {
 		return errors.New("ipset: name too long")
 	}
 
-	// TODO: support AF_INET6
+	option := option{}
+	for _, opt := range opts {
+		opt(&option)
+	}
+
+	var family uint8 = syscall.AF_INET
+	if option.ipv6 {
+		family = syscall.AF_INET6
+	}
+
 	req := NewNetlinkRequest(IPSET_CMD_CREATE|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
 	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
 	req.AddData(NewRtAttr(IPSET_ATTR_SETNAME, ZeroTerminated(setName)))
 	req.AddData(NewRtAttr(IPSET_ATTR_TYPENAME, ZeroTerminated("hash:net")))
 	req.AddData(NewRtAttr(IPSET_ATTR_REVISION, Uint8Attr(1)))
-	req.AddData(NewRtAttr(IPSET_ATTR_FAMILY, Uint8Attr(2)))
+	req.AddData(NewRtAttr(IPSET_ATTR_FAMILY, Uint8Attr(family)))
 	req.AddData(NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil))
 
 	return syscall.Sendto(nl.fd, req.Serialize(), 0, &nl.lsa)
@@ -115,7 +133,6 @@ func (nl *NetLink) DestroySet(setName string) error {
 		return errors.New("setName must be specified")
 	}
 
-	// TODO: support AF_INET6
 	req := NewNetlinkRequest(IPSET_CMD_DESTROY|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
 	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
@@ -130,7 +147,6 @@ func (nl *NetLink) FlushSet(setName string) error {
 		return errors.New("setName must be specified")
 	}
 
-	// TODO: support AF_INET6
 	req := NewNetlinkRequest(IPSET_CMD_FLUSH|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
 	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
@@ -169,7 +185,6 @@ func (nl *NetLink) handleEntry(cmd int, setName, entry string) error {
 		return errors.New("error in entry parsing")
 	}
 
-	// TODO: support AF_INET6
 	req := NewNetlinkRequest(cmd|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
 	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
@@ -178,8 +193,11 @@ func (nl *NetLink) handleEntry(cmd int, setName, entry string) error {
 	attrNested := NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil)
 	attrIP := NewRtAttrChild(attrNested, IPSET_ATTR_IP|NLA_F_NESTED, nil)
 
-	// TODO: support ipV6
-	NewRtAttrChild(attrIP, IPSET_ATTR_IPADDR_IPV4|NLA_F_NET_BYTEORDER, ip.To4())
+	if ipb := ip.To4(); ipb != nil {
+		NewRtAttrChild(attrIP, IPSET_ATTR_IPADDR_IPV4|NLA_F_NET_BYTEORDER, ipb)
+	} else {
+		NewRtAttrChild(attrIP, IPSET_ATTR_IPADDR_IPV6|NLA_F_NET_BYTEORDER, ip.To16())
+	}
 
 	// for cidr prefix
 	if cidr != nil {

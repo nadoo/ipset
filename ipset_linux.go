@@ -1,20 +1,16 @@
 package ipset
 
-import (
-	"github.com/nadoo/ipset/internal/netlink"
-)
-
-var nl *netlink.NetLink
+var nl *NetLink
 
 // Init prepares a netlink socket of ipset.
 func Init() (err error) {
-	nl, err = netlink.New()
+	nl, err = New()
 	return err
 }
 
 // Create creates a new set.
-func Create(setName string) (err error) {
-	return nl.CreateSet(setName)
+func Create(setName string, opts ...Option) (err error) {
+	return nl.CreateSet(setName, opts...)
 }
 
 // Destroy destroys a named set.
