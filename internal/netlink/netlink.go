@@ -172,14 +172,6 @@ func (nl *NetLink) DelFromSet(setName, entry string) error {
 }
 
 func (nl *NetLink) handleEntry(cmd int, setName, entry string, opts ...Option) error {
-	if setName == "" {
-		return errors.New("setName must be specified")
-	}
-
-	if len(setName) > IPSET_MAXNAMELEN {
-		return errors.New("setName too long")
-	}
-
 	ip, err := netip.ParseAddr(entry)
 	if err == nil {
 		return nl.handleAddr(cmd, setName, ip, netip.Prefix{}, opts...)
@@ -193,7 +185,35 @@ func (nl *NetLink) handleEntry(cmd int, setName, entry string, opts ...Option) e
 	return errors.New("error in entry parsing")
 }
 
+// AddAddrToSet adds an addr to ipset.
+func (nl *NetLink) AddAddrToSet(setName string, ip netip.Addr, opts ...Option) error {
+	return nl.handleAddr(IPSET_CMD_ADD, setName, ip, netip.Prefix{})
+}
+
+// DelAddrFromSet deletes an addr from ipset.
+func (nl *NetLink) DelAddrFromSet(setName string, ip netip.Addr) error {
+	return nl.handleAddr(IPSET_CMD_DEL, setName, ip, netip.Prefix{})
+}
+
+// AddPrefixToSet adds a cidr to ipset.
+func (nl *NetLink) AddPrefixToSet(setName string, cidr netip.Prefix, opts ...Option) error {
+	return nl.handleAddr(IPSET_CMD_ADD, setName, cidr.Addr(), cidr)
+}
+
+// DelPrefixFromSet deletes a cidr from ipset.
+func (nl *NetLink) DelPrefixFromSet(setName string, cidr netip.Prefix) error {
+	return nl.handleAddr(IPSET_CMD_DEL, setName, cidr.Addr(), cidr)
+}
+
 func (nl *NetLink) handleAddr(cmd int, setName string, ip netip.Addr, cidr netip.Prefix, opts ...Option) error {
+	if setName == "" {
+		return errors.New("setName must be specified")
+	}
+
+	if len(setName) > IPSET_MAXNAMELEN {
+		return errors.New("setName too long")
+	}
+
 	req := NewNetlinkRequest(cmd|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
 	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))

@@ -37,8 +37,8 @@ func main() {
 	ipset.Create("myset6", ipset.OptIPv6(), ipset.OptTimeout(60))
 	ipset.Flush("myset6")
 
-	ipset.Add("myset6", "2404:6800:4005:812::200e", ipset.OptTimeout(10))
-	ipset.Add("myset6", "2404:6800:4005:812::/64")
+	ipset.Add("myset6", "2022::1", ipset.OptTimeout(10))
+	ipset.Add("myset6", "2022::1/32")
 }
 ```
 
@@ -69,8 +69,8 @@ Size in memory: 1432
 References: 0
 Number of entries: 2
 Members:
-2404:6800:4005:812::/64 timeout 56
-2404:6800:4005:812::200e timeout 6
+2022::1 timeout 9
+2022::/32 timeout 59
 ```
 
 ## Links
