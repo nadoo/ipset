@@ -3,7 +3,7 @@ package netlink
 import (
 	"encoding/binary"
 	"errors"
-	"net"
+	"net/netip"
 	"sync/atomic"
 	"syscall"
 	"unsafe"
@@ -67,11 +67,13 @@ type NetLink struct {
 	lsa syscall.SockaddrNetlink
 }
 
+// Netlink Options
 type Options struct {
 	IPv6    bool
 	Timeout uint32
 }
 
+// Netlink Option func parameter
 type Option func(opts *Options)
 
 // New returns a new netlink socket.
@@ -164,6 +166,7 @@ func (nl *NetLink) AddToSet(setName, entry string, opts ...Option) error {
 	return nl.handleEntry(IPSET_CMD_ADD, setName, entry, opts...)
 }
 
+// AddToSet deletes an entry from ipset.
 func (nl *NetLink) DelFromSet(setName, entry string) error {
 	return nl.handleEntry(IPSET_CMD_DEL, setName, entry)
 }
@@ -177,18 +180,20 @@ func (nl *NetLink) handleEntry(cmd int, setName, entry string, opts ...Option) e
 		return errors.New("setName too long")
 	}
 
-	var ip net.IP
-	var cidr *net.IPNet
-
-	ip, cidr, err := net.ParseCIDR(entry)
-	if err != nil {
-		ip = net.ParseIP(entry)
+	ip, err := netip.ParseAddr(entry)
+	if err == nil {
+		return nl.handleAddr(cmd, setName, ip, netip.Prefix{}, opts...)
 	}
 
-	if ip == nil {
-		return errors.New("error in entry parsing")
+	cidr, err := netip.ParsePrefix(entry)
+	if err == nil {
+		return nl.handleAddr(cmd, setName, cidr.Addr(), cidr, opts...)
 	}
 
+	return errors.New("error in entry parsing")
+}
+
+func (nl *NetLink) handleAddr(cmd int, setName string, ip netip.Addr, cidr netip.Prefix, opts ...Option) error {
 	req := NewNetlinkRequest(cmd|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
 	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
@@ -207,16 +212,15 @@ func (nl *NetLink) handleEntry(cmd int, setName, entry string, opts ...Option) e
 
 	attrIP := NewRtAttrChild(attrData, IPSET_ATTR_IP|NLA_F_NESTED, nil)
 
-	if ipb := ip.To4(); ipb != nil {
-		NewRtAttrChild(attrIP, IPSET_ATTR_IPADDR_IPV4|NLA_F_NET_BYTEORDER, ipb)
+	if ip.Is4() {
+		NewRtAttrChild(attrIP, IPSET_ATTR_IPADDR_IPV4|NLA_F_NET_BYTEORDER, ip.AsSlice())
 	} else {
-		NewRtAttrChild(attrIP, IPSET_ATTR_IPADDR_IPV6|NLA_F_NET_BYTEORDER, ip.To16())
+		NewRtAttrChild(attrIP, IPSET_ATTR_IPADDR_IPV6|NLA_F_NET_BYTEORDER, ip.AsSlice())
 	}
 
 	// for cidr prefix
-	if cidr != nil {
-		cidrPrefix, _ := cidr.Mask.Size()
-		NewRtAttrChild(attrData, IPSET_ATTR_CIDR, Uint8Attr(uint8(cidrPrefix)))
+	if cidr.IsValid() {
+		NewRtAttrChild(attrData, IPSET_ATTR_CIDR, Uint8Attr(uint8(cidr.Bits())))
 	}
 
 	NewRtAttrChild(attrData, 9|NLA_F_NET_BYTEORDER, Uint32Attr(0))
@@ -438,19 +442,13 @@ func Uint32Attr(v uint32) []byte {
 	return bytes
 }
 
-// Uint32Attr .
-func Uint32Attr2(v uint32) []byte {
-	native := NativeEndian()
-	bytes := make([]byte, 4)
-	native.PutUint32(bytes, v)
-	return bytes
-}
-
+// Uint32Attribute .
 type Uint32Attribute struct {
 	Type  uint16
 	Value uint32
 }
 
+// Serialize .
 func (a *Uint32Attribute) Serialize() []byte {
 	native := NativeEndian()
 	buf := make([]byte, rtaAlignOf(8))
@@ -465,6 +463,7 @@ func (a *Uint32Attribute) Serialize() []byte {
 	return buf
 }
 
+// Len .
 func (a *Uint32Attribute) Len() int {
 	return 8
 }

@@ -1,7 +1,9 @@
 # ipset
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/nadoo/ipset?style=flat-square)](https://goreportcard.com/report/github.com/nadoo/ipset)
 [![GitHub tag](https://img.shields.io/github/v/tag/nadoo/ipset.svg?sort=semver&style=flat-square)](https://github.com/nadoo/ipset/releases)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/nadoo/ipset)](https://pkg.go.dev/github.com/nadoo/ipset)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/nadoo/ipset?style=flat-square)](https://go.dev/dl/)
 
 netlink ipset package for Go.
 
@@ -31,7 +33,6 @@ func main() {
 	ipset.Add("myset", "2.2.2.0/24")
 
 	// ipv6 and timeout example
-	ipset.Destroy("myset6")
 	// ipset create myset6 hash:net family inet6 timeout 60
 	ipset.Create("myset6", ipset.OptIPv6(), ipset.OptTimeout(60))
 	ipset.Flush("myset6")
