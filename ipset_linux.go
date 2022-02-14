@@ -1,6 +1,7 @@
 package ipset
 
 import (
+	"errors"
 	"net/netip"
 
 	"github.com/nadoo/ipset/internal/netlink"
@@ -41,30 +42,43 @@ func Flush(setName string) (err error) {
 // Add adds an entry to the named set.
 // entry could be: "1.1.1.1" or "192.168.1.0/24" or "2022::1" or "2022::1/32".
 func Add(setName, entry string, opts ...Option) (err error) {
-	return nl.AddToSet(setName, entry, opts...)
+	return handleEntry(netlink.IPSET_CMD_ADD, setName, entry, opts...)
 }
 
 // Del deletes an entry from the named set.
+// entry could be: "1.1.1.1" or "192.168.1.0/24" or "2022::1" or "2022::1/32".
 func Del(setName, entry string) (err error) {
-	return nl.DelFromSet(setName, entry)
+	return handleEntry(netlink.IPSET_CMD_DEL, setName, entry)
+}
+
+func handleEntry(cmd int, setName, entry string, opts ...Option) error {
+	ip, err := netip.ParseAddr(entry)
+	if err == nil {
+		return nl.HandleAddr(cmd, setName, ip, netip.Prefix{}, opts...)
+	}
+	cidr, err := netip.ParsePrefix(entry)
+	if err == nil {
+		return nl.HandleAddr(cmd, setName, cidr.Addr(), cidr, opts...)
+	}
+	return errors.New("error in entry parsing")
 }
 
 // AddAddr adds an addr to the named set.
 func AddAddr(setName string, ip netip.Addr, opts ...Option) (err error) {
-	return nl.AddAddrToSet(setName, ip, opts...)
+	return nl.HandleAddr(netlink.IPSET_CMD_ADD, setName, ip, netip.Prefix{}, opts...)
 }
 
 // DelAddr deletes an addr from the named set.
 func DelAddr(setName string, ip netip.Addr) (err error) {
-	return nl.DelAddrFromSet(setName, ip)
+	return nl.HandleAddr(netlink.IPSET_CMD_DEL, setName, ip, netip.Prefix{})
 }
 
 // AddPrefix adds a cidr to the named set.
-func AddPrefix(setName string, ip netip.Addr, opts ...Option) (err error) {
-	return nl.AddAddrToSet(setName, ip, opts...)
+func AddPrefix(setName string, cidr netip.Prefix, opts ...Option) (err error) {
+	return nl.HandleAddr(netlink.IPSET_CMD_ADD, setName, cidr.Addr(), cidr, opts...)
 }
 
 // DelPrefix deletes a cidr from the named set.
-func DelPrefix(setName string, ip netip.Addr) (err error) {
-	return nl.DelAddrFromSet(setName, ip)
+func DelPrefix(setName string, cidr netip.Prefix) (err error) {
+	return nl.HandleAddr(netlink.IPSET_CMD_DEL, setName, cidr.Addr(), cidr)
 }
