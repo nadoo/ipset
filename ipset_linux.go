@@ -1,7 +1,6 @@
 package ipset
 
 import (
-	"errors"
 	"net/netip"
 
 	"github.com/nadoo/ipset/internal/netlink"
@@ -60,7 +59,7 @@ func handleEntry(cmd int, setName, entry string, opts ...Option) error {
 	if err == nil {
 		return nl.HandleAddr(cmd, setName, cidr.Addr(), cidr, opts...)
 	}
-	return errors.New("error in entry parsing")
+	return err
 }
 
 // AddAddr adds an addr to the named set.
