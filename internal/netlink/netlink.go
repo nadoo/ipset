@@ -67,13 +67,13 @@ type NetLink struct {
 	lsa syscall.SockaddrNetlink
 }
 
-// Netlink Options
+// Options for netlink.
 type Options struct {
 	IPv6    bool
 	Timeout uint32
 }
 
-// Netlink Option func parameter
+// Option func parameter
 type Option func(opts *Options)
 
 // New returns a new netlink socket.
@@ -161,6 +161,7 @@ func (nl *NetLink) FlushSet(setName string) error {
 	return syscall.Sendto(nl.fd, req.Serialize(), 0, &nl.lsa)
 }
 
+// HandleAddr adds netip.Addr/netip.Prefix to set.
 func (nl *NetLink) HandleAddr(cmd int, setName string, ip netip.Addr, cidr netip.Prefix, opts ...Option) error {
 	if setName == "" {
 		return errors.New("setName must be specified")
