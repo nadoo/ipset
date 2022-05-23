@@ -71,6 +71,7 @@ type NetLink struct {
 type Options struct {
 	IPv6    bool
 	Timeout uint32
+	Excl    bool
 }
 
 // Option func parameter
@@ -171,19 +172,24 @@ func (nl *NetLink) HandleAddr(cmd int, setName string, ip netip.Addr, cidr netip
 		return errors.New("setName too long")
 	}
 
-	req := NewNetlinkRequest(cmd|(NFNL_SUBSYS_IPSET<<8), syscall.NLM_F_REQUEST)
+	option := Options{}
+	for _, opt := range opts {
+		opt(&option)
+	}
+
+	flags := syscall.NLM_F_REQUEST
+	if option.Excl {
+		flags |= syscall.NLM_F_EXCL
+	}
+
+	req := NewNetlinkRequest(cmd|(NFNL_SUBSYS_IPSET<<8), flags)
 	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
 	req.AddData(NewRtAttr(IPSET_ATTR_SETNAME, ZeroTerminated(setName)))
 
 	attrData := NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil)
 
-	option := Options{}
-	for _, opt := range opts {
-		opt(&option)
-	}
-
-	if option.Timeout != 0 {
+	if option.Timeout >= 0 {
 		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.Timeout})
 	}
 
