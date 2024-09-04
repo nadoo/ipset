@@ -72,6 +72,7 @@ type Options struct {
 	IPv6    bool
 	Timeout uint32
 	Excl    bool
+	Type    string
 }
 
 // Option func parameter
@@ -121,7 +122,11 @@ func (nl *NetLink) CreateSet(setName string, opts ...Option) error {
 	req.AddData(NewNfGenMsg(syscall.AF_INET, 0, 0))
 	req.AddData(NewRtAttr(IPSET_ATTR_PROTOCOL, Uint8Attr(IPSET_PROTOCOL)))
 	req.AddData(NewRtAttr(IPSET_ATTR_SETNAME, ZeroTerminated(setName)))
-	req.AddData(NewRtAttr(IPSET_ATTR_TYPENAME, ZeroTerminated("hash:net")))
+	if option.Type != "" {
+		req.AddData(NewRtAttr(IPSET_ATTR_TYPENAME, ZeroTerminated(option.Type)))
+	} else {
+		req.AddData(NewRtAttr(IPSET_ATTR_TYPENAME, ZeroTerminated("hash:net")))
+	}
 	req.AddData(NewRtAttr(IPSET_ATTR_REVISION, Uint8Attr(1)))
 	req.AddData(NewRtAttr(IPSET_ATTR_FAMILY, Uint8Attr(family)))
 

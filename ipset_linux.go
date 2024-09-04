@@ -19,6 +19,9 @@ func OptTimeout(timeout uint32) Option { return func(opts *netlink.Options) { op
 
 func OptExcl() Option { return func(opts *netlink.Options) { opts.Excl = true } }
 
+// OptType sets `type` parameter to operations.
+func OptType(typeName string) Option { return func(opts *netlink.Options) { opts.Type = typeName } }
+
 // Init prepares a netlink socket of ipset.
 func Init() (err error) {
 	nl, err = netlink.New()
