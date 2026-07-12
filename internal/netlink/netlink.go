@@ -68,10 +68,16 @@ type NetLink struct {
 	lsa syscall.SockaddrNetlink
 }
 
+// NullableUint32 for Options
+type NullableUint32 struct {
+	Value uint32
+	Valid bool
+}
+
 // Options for netlink.
 type Options struct {
 	IPv6    bool
-	Timeout uint32
+	Timeout NullableUint32
 	Excl    bool
 	Comment string
 }
@@ -128,8 +134,8 @@ func (nl *NetLink) CreateSet(setName string, opts ...Option) error {
 	req.AddData(NewRtAttr(IPSET_ATTR_FAMILY, Uint8Attr(family)))
 
 	attrData := NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil)
-	if option.Timeout != 0 {
-		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.Timeout})
+	if option.Timeout.Valid {
+		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.Timeout.Value})
 	}
 	req.AddData(attrData)
 
@@ -191,8 +197,8 @@ func (nl *NetLink) HandleAddr(cmd int, setName string, ip netip.Addr, cidr netip
 
 	attrData := NewRtAttr(IPSET_ATTR_DATA|NLA_F_NESTED, nil)
 
-	if option.Timeout >= 0 {
-		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.Timeout})
+	if option.Timeout.Valid {
+		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.Timeout.Value})
 	}
 
 	if option.Comment != "" {

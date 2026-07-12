@@ -15,7 +15,9 @@ type Option = netlink.Option
 func OptIPv6() Option { return func(opts *netlink.Options) { opts.IPv6 = true } }
 
 // OptTimeout sets `timeout xx` parameter to operations.
-func OptTimeout(timeout uint32) Option { return func(opts *netlink.Options) { opts.Timeout = timeout } }
+func OptTimeout(timeout uint32) Option {
+	return func(opts *netlink.Options) { opts.Timeout = netlink.NullableUint32{Value: timeout, Valid: true} }
+}
 
 // OptComment sets `comment xx` parameter to operations.
 func OptComment(comment string) Option { return func(opts *netlink.Options) { opts.Comment = comment } }
