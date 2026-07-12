@@ -17,6 +17,9 @@ func OptIPv6() Option { return func(opts *netlink.Options) { opts.IPv6 = true } 
 // OptTimeout sets `timeout xx` parameter to operations.
 func OptTimeout(timeout uint32) Option { return func(opts *netlink.Options) { opts.Timeout = timeout } }
 
+// OptComment sets `comment xx` parameter to operations.
+func OptComment(comment string) Option { return func(opts *netlink.Options) { opts.Comment = comment } }
+
 func OptExcl() Option { return func(opts *netlink.Options) { opts.Excl = true } }
 
 // Init prepares a netlink socket of ipset.

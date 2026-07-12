@@ -44,6 +44,7 @@ const (
 	IPSET_ATTR_IP      = 1
 	IPSET_ATTR_CIDR    = 3
 	IPSET_ATTR_TIMEOUT = 6
+	IPSET_ATTR_COMMENT = 26
 )
 
 // IP specific attributes.
@@ -72,6 +73,7 @@ type Options struct {
 	IPv6    bool
 	Timeout uint32
 	Excl    bool
+	Comment string
 }
 
 // Option func parameter
@@ -191,6 +193,10 @@ func (nl *NetLink) HandleAddr(cmd int, setName string, ip netip.Addr, cidr netip
 
 	if option.Timeout >= 0 {
 		attrData.AddChild(&Uint32Attribute{Type: IPSET_ATTR_TIMEOUT | NLA_F_NET_BYTEORDER, Value: option.Timeout})
+	}
+
+	if option.Comment != "" {
+		NewRtAttrChild(attrData, IPSET_ATTR_COMMENT|NLA_F_NET_BYTEORDER, ZeroTerminated(option.Comment))
 	}
 
 	attrIP := NewRtAttrChild(attrData, IPSET_ATTR_IP|NLA_F_NESTED, nil)
